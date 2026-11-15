@@ -12,13 +12,18 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
 
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y jq zip      
-        pip3 install boto3
+        sudo apt-get install -y jq zip
+        pip install boto3
 
     - name: Set environment variables
       id: set-env-vars
@@ -56,16 +61,15 @@ jobs:
         echo "Deploying to Lambda function: $FUNCTION_NAME"
 
         # Check if the Lambda function exists
-        FUNCTION_EXISTS=$(aws lambda get-function --function-name $FUNCTION_NAME --region $REGION || echo "false")
-
+        FUNCTION_EXISTS=$(aws lambda get-function --function-name $FUNCTION_NAME --region $REGION 2>/dev/null || echo "false")
         ENV_VARS="Variables={ENV=${{ env.ENV }},API_KEY=${{ env.API_KEY }},LOG_LEVEL=${{ env.LOG_LEVEL }}}"
 
         if [ "$FUNCTION_EXISTS" == "false" ]; then
           echo "Creating Lambda function $FUNCTION_NAME..."
           aws lambda create-function \
             --function-name $FUNCTION_NAME \
-            --runtime python \
-            --role arn:aws:iam::936000665529:role/service-role/myfirstlamda-role-8wk6cja1
+            --runtime python3.11 \
+            --role arn:aws:iam::936000665529:role/service-role/myfirstlamda-role-8wk6cja1 \
             --handler app.lambda_handler \
             --timeout 300 \
             --zip-file fileb://lambda.zip \
